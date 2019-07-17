@@ -1,0 +1,6 @@
+KERNEL=="sd[a-z][0-9]", ACTION=="add",  SUBSYSTEM=="block", RUN="/usr/sbin/usb_up.sh %k %p",OPTIONS="last_rule"
+KERNEL=="sd[a-z][0-9]", ACTION=="remove", SUBSYSTEM=="block", RUN="/usr/sbin/usb_down.sh %k %p",OPTIONS="last_rule"
+KERNEL=="sd[a-z]", ACTION=="add",  SUBSYSTEM=="block", RUN="/usr/sbin/usb_up.sh %k %p",OPTIONS="last_rule"
+KERNEL=="sd[a-z]", ACTION=="remove",  SUBSYSTEM=="block", RUN="/usr/sbin/usb_down.sh %k %p",OPTIONS="last_rule"
+KERNEL=="*",ACTION=="add",SUBSYSTEMS=="usb",DRIVERS=="usb",RUN="/usr/sbin/Printer.sh add",OPTIONS="last_rule"
+KERNEL=="*",ACTION=="remove",SUBSYSTEMS=="usb",DRIVERS=="usb",RUN="/usr/sbin/Printer.sh remove",OPTIONS="last_rule"

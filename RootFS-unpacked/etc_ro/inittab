@@ -1,0 +1,4 @@
+::sysinit:/etc_ro/init.d/rcS
+ttyS0::respawn:/sbin/sulogin
+::ctrlaltdel:/bin/umount -a -r
+::shutdown:/usr/sbin/usb led_off

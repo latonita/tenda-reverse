@@ -1,0 +1,27 @@
+#! /bin/sh
+
+cd /sys/devices/virtual/misc/ugw_gpio/gpio_base/
+
+#ºìÉ«LED
+echo 0 > gpio_index
+echo 33 > gpio_id
+#echo 3 > pattern
+#echo 1 > start
+
+#ÂÌµÆLED
+# echo 1 > gpio_index
+# echo 31 > gpio_id
+# echo 1 > pattern
+# echo 1 > start
+# echo 0 > start
+
+#¸´Î»°´¼ü
+echo 5 > gpio_index
+echo 54 > gpio_id
+#echo 16 > signal
+echo 6 > act_time
+echo 6 > inact_time
+#echo 1 > start
+#echo xxx > pid
+
+cd -

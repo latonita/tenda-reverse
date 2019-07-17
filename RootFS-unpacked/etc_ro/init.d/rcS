@@ -1,0 +1,80 @@
+#! /bin/sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin/
+export PATH
+
+mount -t ramfs none /var/
+
+
+mkdir -p /var/etc
+mkdir -p /var/media
+mkdir -p /var/webroot
+mkdir -p /var/etc/iproute
+mkdir -p /var/run
+mkdir -p /var/debug
+
+cp -rf /etc_ro/* /etc/
+cp -rf /webroot_ro/* /webroot/
+mkdir -p /var/etc/upan
+mount -a
+
+mount -t ramfs /dev
+mkdir /dev/pts
+mount -t devpts devpts /dev/pts
+mount -t tmpfs none /var/etc/upan -o size=2M
+mdev -s
+mkdir /var/run
+echo 1 > /proc/sys/vm/panic_on_oom
+echo 1 > /proc/sys/kernel/panic_on_oops
+
+
+echo '/sbin/mdev' > /proc/sys/kernel/hotplug
+#echo 'sd[a-z][0-9] 0:0 0660 @/usr/sbin/autoUsb.sh $MDEV' >> /etc/mdev.conf
+#echo 'sd[a-z] 0:0 0660 $/usr/sbin/DelUsb.sh $MDEV' >> /etc/mdev.conf
+#echo 'lp[0-9] 0:0 0660 */usr/sbin/IppPrint.sh'>> /etc/mdev.conf
+#wds rule start
+echo 'wds*.* 0:0 0660 */etc/wds.sh $ACTION $INTERFACE' > /etc/mdev.conf
+#wsd rule end
+echo 'sd[a-z][0-9] 0:0 0660 @/usr/sbin/usb_up.sh $MDEV $DEVPATH' >> /etc/mdev.conf
+echo '-sd[a-z] 0:0 0660 $/usr/sbin/usb_down.sh $MDEV $DEVPATH'>> /etc/mdev.conf
+echo 'sd[a-z] 0:0 0660 @/usr/sbin/usb_up.sh $MDEV $DEVPATH'>> /etc/mdev.conf
+echo '.* 0:0 0660 */usr/sbin/IppPrint.sh $ACTION $INTERFACE'>> /etc/mdev.conf
+mkdir -p /var/ppp
+
+insmod /lib/modules/dhcp_options.ko
+#insmod /lib/modules/gpio.ko
+insmod /lib/modules/phy_check.ko
+#insmod /lib/modules/fastnat.ko 
+insmod /lib/modules/bm.ko
+#insmod /lib/modules/ai.ko 
+insmod /lib/modules/mac_filter.ko 
+#insmod /lib/modules/ip_mac_bind.ko
+#insmod /lib/modules/privilege_ip.ko
+insmod /lib/modules/nos.ko
+#insmod /lib/modules/url_filter.ko
+#insmod /lib/modules/loadbalance.ko
+#insmod /lib/modules/app_filter.ko
+#insmod /lib/modules/port_filter.ko
+#insmod /lib/modules/arp_fence.ko
+#insmod /lib/modules/ddos_ip_fence.ko
+#/etc/gpio_conf
+echo "enable 0 interval 0" >/proc/watchdog_cmd
+chmod +x /etc/mdev.conf
+mkdir -p /tmp/log
+mkdir -p /tmp/log/crash
+mkdir -p /tmp/log_print
+
+ln -sf /proc/port1 /var/port1
+ln -sf /proc/port3 /var/port0
+
+echo 'kern.* /tmp/log/kernel.log' >>  /etc/syslog.conf
+echo '*.* /tmp/log_print/message.txt' >>  /etc/syslog.conf
+
+klogd -n &
+syslogd -f /var/etc/syslog.conf -s 50 &
+
+monitor &
+sh /usr/bin/ugw_watchdog.sh 2>/tmp/log_print/ugw_watchdog.log&
+#sh /usr/bin/mesh_op.sh > /dev/null &
+
+
