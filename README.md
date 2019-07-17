@@ -50,7 +50,7 @@ This chip has SPI mode and can work as master.
 Pinout is taken from datasheet.
 
 | FT2232H port | Function | Flash chip pin |
---------------------------------------------
+|--------------|----------|----------------|
 | ADBUS0       | SCK      | 6 |
 | ADBUS1       | MOSI     | 5 |
 | ADBUS2       | MISO     | 2 |
