@@ -1,0 +1,33 @@
+ 
+root@x1:/home/user/Documents/tenda/mtd/test# flashrom -p ft2232_spi:type=2232H,port=A
+flashrom v0.9.9-r1954 on Linux 4.18.0-25-generic (x86_64)
+flashrom is free software, get the source code at https://flashrom.org
+
+Calibrating delay loop... OK.
+Found Winbond flash chip "W25Q64.V" (8192 kB, SPI) on ft2232_spi.                                                                                                                                              
+No operations were specified.                                                                                                                                                                                  
+
+root@x1:/home/user/Documents/tenda/mtd/test# flashrom -p ft2232_spi:type=2232H,port=A -r w.bin
+flashrom v0.9.9-r1954 on Linux 4.18.0-25-generic (x86_64)                                                                                                                                                      
+flashrom is free software, get the source code at https://flashrom.org                                                                                                                                         
+                                                                                                                                                                                                              
+Calibrating delay loop... OK.                                                                                                                                                                                  
+Found Winbond flash chip "W25Q64.V" (8192 kB, SPI) on ft2232_spi.                                                                                                                                              
+Reading flash... done.                                                                                                                                                                                         
+
+root@x1:/home/user/Documents/tenda/mtd/test# flashrom -p ft2232_spi:type=2232H,port=A 
+flashrom v0.9.9-r1954 on Linux 4.18.0-25-generic (x86_64)                                                                                                                                                      
+flashrom is free software, get the source code at https://flashrom.org                                                                                                                                         
+                                                                                                                                                                                                               
+Calibrating delay loop... OK.                                                                                                                                                                                  
+Found Generic flash chip "unknown SPI chip (RDID)" (0 kB, SPI) on ft2232_spi.                                                                                                                                  
+===                                                                                                                                                                                                            
+This flash part has status NOT WORKING for operations: PROBE READ ERASE WRITE                                                                                                                                  
+The test status of this chip may have been updated in the latest development                                                                                                                                   
+version of flashrom. If you are running the latest development version,                                                                                                                                        
+please email a report to flashrom@flashrom.org if any of the above operations                                                                                                                                  
+work correctly for you with this flash chip. Please include the flashrom log                                                                                                                                   
+file for all operations you tested (see the man page for details), and mention                                                                                                                                 
+which mainboard or programmer you tested in the subject line.                                                                                                                                                  
+Thanks for your help!                                                                                                                                                                                          
+No operations were specified.                                                                                                                                                                                  
