@@ -136,3 +136,104 @@ root:$1$nalENqL8$jnRFwb1x5S.ygN.3nwTbG1:0:0:root:/:/bin/sh
 root:$1$OVhtCyFa$7tISyKW1KGssHAQj1vI3i1:14319::::::
 ```
 
+### Initrd
+
+
+# First try
+First try was very naive: lets update `/etc/initrd` and put it back.
+Updated the file, packed files to squshfs back - ooops, its larger than it was.
+Examined compression - it was XZ originally, but `mksquashfs` used LZMA by default. 
+Changed to XZ, now it is pretty same size and fits to RootFS MTD.
+Padded newRootFS file with FF till it reached original MTD partition size.
+Combined all the files back into on one image file, wrote to flash, booting...
+
+## Fail
+How could I forget about CRC... Trying to find out proper way to calculate CRC, found RSDK, tried to understand image creation... too much for my brain for now.
+Lets try something else.
+
+# Second try
+According to the boot log there is `netctrl` process which starts early and changes root password.
+```
+argv[0] = netctrl
+netctrl
+prod_change_root_passwd(83)
+```
+So lets do the hard way. Try to disassemble and reverse the code. Ouch. Never saw MIPS asm...
+
+## Look for the files
+Looking through the files found many of them are using `prod_change_root_passwd`, `netctrl` uses it and looks like the function itself defined in `/lib/libcommonprod.so`.
+
+Open `/bin/netctrl` in IDA. Open function `main`. It clears up buffers first, then reads `sys.role` parameter from configuration and depends on this either sleeps or calls external function `prod_change_root_passwd` without parameters.
+
+
+Open `/lib/libcommonprod.so`. Open function `prod_change_root_passw`. Also clears buffers first, then reads some parameters from config and calls `Encode64()` with value either `wl2g.ssid0.wpapsk_psk` or `TD_WLAN1_SSID0_PWD`.
+
+And then just sets root password via command line `(echo %s;sleep 1;echo %s) | passwd root -a s> /dev/null`
+Voila! 
+Calculated Base64 of my default password from the sticker, connected via serial...
+```
+Normal startupGive root password for system maintenance
+(or type Control-D for normal startup):
+System Maintenance Mode
+~ #
+~ # uname -a
+Linux NOVA-xxxxxxxxxxxx 3.10.90 #4 Mon Jul 2 10:57:35 CST 2018 mips GNU/Linux
+```
+Basically nothing interesting to see here yet. No users except for the root is registered in the system.
+
+```
+~ # cat /proc/cpuinfo
+system type             : RTL8197F
+machine                 : Unknown
+processor               : 0
+cpu model               : MIPS 24Kc V8.5
+BogoMIPS                : 666.41
+wait instruction        : yes
+microsecond timers      : yes
+tlb_entries             : 64
+extra interrupt vector  : yes
+hardware watchpoint     : yes, count: 4, address/irw mask: [0x0ffc, 0x0ffc, 0x0ffb, 0x0ffb]
+isa                     : mips1 mips2 mips32r2
+ASEs implemented        : mips16
+shadow register sets    : 4
+kscratch registers      : 0
+core                    : 1
+VCED exceptions         : not available
+VCEI exceptions         : not available
+
+~ # ls -l /sys/class/gpio/
+total 0
+--w-------    1 root     root         16384 Jan  1  1970 export
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio18 -> ../../devices/virtual/gpio/gpio18
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio19 -> ../../devices/virtual/gpio/gpio19
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio58 -> ../../devices/virtual/gpio/gpio58
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpiochip0 -> ../../devices/virtual/gpio/gpiochip0
+--w-------    1 root     root         16384 Jan  1  1970 unexport
+
+~ # ls -l /sys/devices/platform/
+total 0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 alarmtimer
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_i2c_pin.1
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_i2c_pin.2
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_reset_pin.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_btn.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.1
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.2
+drwxr-xr-x    3 root     root             0 Jan  1  1970 serial8250
+drwxr-xr-x    3 root     root             0 Jan  1  1970 spi-sheipa.0
+-rw-r--r--    1 root     root         16384 Jul 18 21:12 uevent
+```
+
+
+# *Success!* 
+I have root access to new Tenda MW6, that makes me happy. I hate having black boxes.
+
+# Next steps
+So back to my original problem with DHCP server starting up no matter what.
+Its time to examine the scripts and how they work. Looks like many business logic is done in C/C++ and compiled (vs making a lot of scripts).
+Another complication is no overlay fs, all mounted R/O except for `/dev/mtdblock7` on `/tmp/log/crash type jffs2 (rw,relatime)`
+We'll see how it goes.
+
+That was fun.
+

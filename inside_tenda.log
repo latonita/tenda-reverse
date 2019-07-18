@@ -1,0 +1,82 @@
+
+Normal startupGive root password for system maintenance
+(or type Control-D for normal startup):
+System Maintenance Mode
+~ #
+~ # uname -a
+Linux NOVA-0495e61a96e0 3.10.90 #4 Mon Jul 2 10:57:35 CST 2018 mips GNU/Linux
+~ # cat /proc/version
+Linux version 3.10.90 (root@linux-bkb8) (gcc version 4.4.7 (Realtek MSDK-4.4.7 Build 2001) ) #4 Mon Jul 2 10:57:35 CST 2018
+~ # cat /proc/cpuinfo
+system type             : RTL8197F
+machine                 : Unknown
+processor               : 0
+cpu model               : MIPS 24Kc V8.5
+BogoMIPS                : 666.41
+wait instruction        : yes
+microsecond timers      : yes
+tlb_entries             : 64
+extra interrupt vector  : yes
+hardware watchpoint     : yes, count: 4, address/irw mask: [0x0ffc, 0x0ffc, 0x0ffb, 0x0ffb]
+isa                     : mips1 mips2 mips32r2
+ASEs implemented        : mips16
+shadow register sets    : 4
+kscratch registers      : 0
+core                    : 1
+VCED exceptions         : not available
+VCEI exceptions         : not available
+
+~ # cat /proc/mtd
+dev:    size   erasesize  name
+mtd0: 00800000 00010000 "ALL"
+mtd1: 00020000 00010000 "Bootloader"
+mtd2: 00010000 00010000 "CFG"
+mtd3: 00590000 00010000 "KernelFS"
+mtd4: 00397fee 00010000 "RootFS"
+mtd5: 00010000 00010000 "CFM"
+mtd6: 00010000 00010000 "CFM_BACKUP"
+mtd7: 00210000 00010000 "LOG"
+mtd8: 00010000 00010000 "ENV"
+~ # ls -l /sys/class/gpio/
+total 0
+--w-------    1 root     root         16384 Jan  1  1970 export
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio18 -> ../../devices/virtual/gpio/gpio18
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio19 -> ../../devices/virtual/gpio/gpio19
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpio58 -> ../../devices/virtual/gpio/gpio58
+lrwxrwxrwx    1 root     root             0 Jan  1  1970 gpiochip0 -> ../../devices/virtual/gpio/gpiochip0
+--w-------    1 root     root         16384 Jan  1  1970 unexport
+~ # ls -l /sys/devices/platform/
+total 0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 alarmtimer
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_i2c_pin.1
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_i2c_pin.2
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_8367r_reset_pin.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_btn.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.0
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.1
+drwxr-xr-x    2 root     root             0 Jul 18 21:12 rtl819x_led.2
+drwxr-xr-x    3 root     root             0 Jan  1  1970 serial8250
+drwxr-xr-x    3 root     root             0 Jan  1  1970 spi-sheipa.0
+-rw-r--r--    1 root     root         16384 Jul 18 21:12 uevent
+
+~ # cat /etc/passwd
+root:$5$xxxxxxxx$xxxxxxxxxxxxxxxxxxxx:0:0:root:/:/bin/sh
+~ # cat /etc/shadow
+root:$1$xxxxxxxxxxxxxxxxxx:14319::::::
+~ # adduser
+-sh: adduser: not found
+~ # dmesg
+dmesg: applet not found
+~ # mount
+rootfs on / type rootfs (rw)
+/dev/root on / type squashfs (ro,relatime)
+none on /var type ramfs (rw,relatime)
+proc on /proc type proc (rw,relatime)
+none on /tmp type ramfs (rw,relatime)
+mdev on /dev type ramfs (rw,relatime)
+none on /sys type sysfs (rw,relatime)
+mdev on /dev type ramfs (rw,relatime)
+devpts on /dev/pts type devpts (rw,relatime,mode=600,ptmxmode=000)
+none on /var/etc/upan type tmpfs (rw,relatime,size=2M)
+/dev/mtdblock7 on /tmp/log/crash type jffs2 (rw,relatime)
+
