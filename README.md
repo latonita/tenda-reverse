@@ -21,7 +21,21 @@ Googled, found their support - same issue, however person says `dhcp authoritati
 So I started investigation - how can I disable DHCP server.
 
 # Network services
-Few ports opened on the cube. nothing looks like telnet or ssh.
+Few ports opened on the cube. nothing looks like telnet or ssh from the beginning
+
+From LAN
+```
+PORT     STATE SERVICE                                                          
+23/tcp   open  telnet      <--- opened only after you hold Reset for 3 seconds
+5500/tcp open  hotline
+9000/tcp open  cslistener
+```
+From WAN
+```
+PORT     STATE  SERVICE
+1723/tcp closed pptp
+```
+Closer examination of firmware required to understand what is opened and when.
 
 ## Reset button - telnetd
 This came after UART research.
@@ -29,10 +43,10 @@ Holding reset button for 3 seconds brings up telnetd!
 However hard to get in. root/admin/support/user do not work with admin/password/user/1234/12345678 passwords and some other I tried.
 
 # Hardware
-Opening the cube is very straightforward. Of interesting - UART socket and soic-8 SPI flash.
+Opening the cube is very straightforward. Of interesting - UART socket and soic-8 SPI flash. Main chip closed by radiator - RealTek RTL8197F
 
 ## UART - J4
-115200 8n1
+115200 8n1. Starting from pin 1 (closer to SPI flash): VCC, RX, TX, GND.
 
 ## Memory chip
 BOHONG BH25Q64 SPI Flash, 8MB. [Datasheet](http://www.hhzealcore.com/upload/201807/02/201807021644551022.pdf)
@@ -44,7 +58,7 @@ Is not available on web. Phone app looks for that in tenda cloud and downloads i
 Unfortunately chip clamp didn't work, it powers up whole device and it starts communication with chip.
 Desoldered it completely.
 
-## How to read it, FTFS!
+### How to read it, FTFS!
 I'm not reading flash chips everyday and I don't own special programming device for this.
 However I found FTDI FT2232H device, which I used as OpenOCD JTAG debugger for ESP32.
 This chip has SPI mode and can work as master.
@@ -59,7 +73,7 @@ Pinout is taken from datasheet.
 
 Other flash chip pins 4 - GND, 8 - VCC 3.3v, 3 and 7 go to VCC.
 
-## Use flashrom
+### Use flashrom
 ```
 $ flashrom -p ft2232_spi:type=2232H,port=A
 ```
@@ -82,14 +96,23 @@ Thanks for your help!
 No operations were specified.
 ```
 
-## Arduinos to the rescue
+## Arduinos and Espressif to the rescue
 Looked around and found [site SKProj with sketch and .net app (in russian)](http://skproj.ru/programmator-spi-flash-svoimi-rukami/) which worked well for me to read chinese flash chip.
 
 
-I used NodeMCU esp8266 board. *Important* SPI chip shall be connected to HSPI pins `GPIO12-GPIO14` as per [official documentation](https://nodemcu.readthedocs.io/en/master/modules/spi/).
+I used NodeMCU esp8266 board since it is 3.3v and I didn't want to think of 5v<>3v level conversion. 
+
+**Important**: SPI chip shall be connected to HSPI pins `GPIO12-GPIO14` as per [official documentation](https://nodemcu.readthedocs.io/en/master/modules/spi/).
+
+- There is `serprog` firmware for Arduinos which work with `flashrom`, but I couldn't quickly find its port for esp8266
 
 ## Change flash chip to normal one
-To make flashing easier I just bought couple Winbond W25Q64FV chips. They properly work with `flashrom` and i dont need to run Windows to flash chip. I wrote flash dump to new chip, tenda bootloader detected it properly and firmware started normally. 
+To make flashing easier I just bought couple Winbond W25Q64FV chips. They properly work with `flashrom` and I dont need to run Windows to flash chip. I wrote flash dump to new chip with 
+```
+flashrom -p ft2232_spi:type=2232H,port=A -w image.bin
+```
+Tenda bootloader detected new flash chip properly and started normally. 
+
 
 # Firmware examination
 Straight run of binwalk gives a lot of regular findings.
@@ -127,23 +150,30 @@ Not clear for me why `KernelFS` and `RootFS` intersect according to MTD table.
 
 ## RootFS 
 Just `unsquashfs` to unpack file system. Its busybox based.
-### Users
-`/etc/passwd`
+
+cat `/etc/passwd`
 ```
 root:$1$nalENqL8$jnRFwb1x5S.ygN.3nwTbG1:0:0:root:/:/bin/sh
 ```
-`/etc/shadow`
+cat `/etc/shadow`
 ```
 root:$1$OVhtCyFa$7tISyKW1KGssHAQj1vI3i1:14319::::::
 ```
+cat `/etc/inittab`
+```
+::sysinit:/etc_ro/init.d/rcS
+ttyS0::respawn:/sbin/sulogin
+::ctrlaltdel:/bin/umount -a -r
+::shutdown:/usr/sbin/usb led_off
+```
 
-### Initrd
+# First try to get in
+First try was very naive: lets update `/etc/inittab` and put it back.
 
+Changed `ttyS0::respawn:/sbin/sulogin` to `ttyS0::respawn:/bin/login -f root`
 
-# First try
-First try was very naive: lets update `/etc/initrd` and put it back.
 Updated the file, packed files to squshfs back - ooops, its larger than it was.
-Examined compression - it was XZ originally, but `mksquashfs` used LZMA by default. 
+Examined compression - it was `XZ` originally, but `mksquashfs` used LZMA by default. 
 Changed to XZ, now it is pretty same size and fits to RootFS MTD.
 Padded newRootFS file with FF till it reached original MTD partition size.
 Combined all the files back into on one image file, wrote to flash, booting...
@@ -185,7 +215,8 @@ rootfs checksum error at 00228012!
 ```
 
 ## Fail!
-How could I forget about CRC... Trying to find out proper way to calculate CRC, spent couple hours - found RSDK, tried to understand image creation... too much for my brain for now.
+How could I forget about CRC... I spent couple hours trying to find out proper way to calculate CRC - found RSDK, tried to understand image creation... too much for my brain for now.
+
 Lets try something else.
 
 # Second try
@@ -200,13 +231,16 @@ So lets do the hard way. Try to disassemble and reverse the code. Ouch. Never sa
 ## Look for the files
 Looking through the files found many of them are using `prod_change_root_passwd`, `netctrl` uses it and looks like the function itself defined in `/lib/libcommonprod.so`.
 
+## Hard way with IDA PRO which I see first time in my life
 Open `/bin/netctrl` in IDA. Open function `main`. It clears up buffers first, then reads `sys.role` parameter from configuration and depends on this either sleeps or calls external function `prod_change_root_passwd` without parameters.
 
 
 Open `/lib/libcommonprod.so`. Open function `prod_change_root_passw`. Also clears buffers first, then reads some parameters from config and calls `Encode64()` with value either `wl2g.ssid0.wpapsk_psk` or `TD_WLAN1_SSID0_PWD`.
 
 And then just sets root password via command line `(echo %s;sleep 1;echo %s) | passwd root -a s> /dev/null`
-Voila! 
+
+**Voila!**
+
 Calculated Base64 of my default password from the sticker, connected via serial...
 ```
 Normal startupGive root password for system maintenance
@@ -216,6 +250,7 @@ System Maintenance Mode
 ~ # uname -a
 Linux NOVA-xxxxxxxxxxxx 3.10.90 #4 Mon Jul 2 10:57:35 CST 2018 mips GNU/Linux
 ```
+## I'm in
 Basically nothing interesting to see here yet. No users except for the root is registered in the system.
 
 ```
@@ -326,9 +361,10 @@ PID   USER     TIME   COMMAND
 12156 root       0:00 ps
 ```
 
-# *Success!* 
-I have root access to new Tenda MW6, that makes me happy. I hate having black boxes.
-Root password is just your current wifi password, encoded with Base64
+# Access granted
+I have root access to new Tenda MW6, that makes me happy since I hate having black boxes.
+
+Root password is just your current wifi password, encoded with Base64.
 
 # Next steps
 So back to my original problem with DHCP server starting up no matter what.
