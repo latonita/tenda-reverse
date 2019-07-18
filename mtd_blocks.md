@@ -1,3 +1,4 @@
+```
 m25p80 spi0.0: found BH25Q64, expected m25p80
 flash vendor: BOHONG
 m25p80 spi0.0: BH25Q64 (8192 Kbytes) (55000000 Hz)
@@ -14,4 +15,4 @@ Creating 9 MTD partitions on "m25p80":
 0x0000005d0000-0x0000005e0000 : "CFM_BACKUP"
 0x0000005e0000-0x0000007f0000 : "LOG"
 0x0000007f0000-0x000000800000 : "ENV"
-
+```
