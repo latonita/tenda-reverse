@@ -1,7 +1,5 @@
 
 
-
-
 # put new squshfs to image. CRC failure
 got 
 ```

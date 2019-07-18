@@ -22,6 +22,7 @@ So I started investigation - how can I disable DHCP server.
 
 # Network services
 Few ports opened on the cube. nothing looks like telnet or ssh.
+
 ## Reset button - telnetd
 This came after UART research.
 Holding reset button for 3 seconds brings up telnetd!
@@ -64,21 +65,21 @@ $ flashrom -p ft2232_spi:type=2232H,port=A
 ```
 and it brings only sadness...
 ```
-flashrom v0.9.9-r1954 on Linux 4.18.0-25-generic (x86_64)                                                                                                                                                      
-flashrom is free software, get the source code at https://flashrom.org                                                                                                                                         
-                                                                                                                                                                                                               
-Calibrating delay loop... OK.                                                                                                                                                                                  
-Found Generic flash chip "unknown SPI chip (RDID)" (0 kB, SPI) on ft2232_spi.                                                                                                                                  
-===                                                                                                                                                                                                            
-This flash part has status NOT WORKING for operations: PROBE READ ERASE WRITE                                                                                     
-The test status of this chip may have been updated in the latest development                                                                                                                                   
-version of flashrom. If you are running the latest development version,                                                                                                                                        
-please email a report to flashrom@flashrom.org if any of the above operations                                                                                                                                  
-work correctly for you with this flash chip. Please include the flashrom log                                                                                                                                   
-file for all operations you tested (see the man page for details), and mention                                                                                                                                 
-which mainboard or programmer you tested in the subject line.                                                                                                                                                  
-Thanks for your help!                                                                                                                                                                                          
-No operations were specified.                        
+flashrom v0.9.9-r1954 on Linux 4.18.0-25-generic (x86_64)
+flashrom is free software, get the source code at https://flashrom.org 
+ 
+Calibrating delay loop... OK.
+Found Generic flash chip "unknown SPI chip (RDID)" (0 kB, SPI) on ft2232_spi.
+===
+This flash part has status NOT WORKING for operations: PROBE READ ERASE WRITE 
+The test status of this chip may have been updated in the latest development 
+version of flashrom. If you are running the latest development version,
+please email a report to flashrom@flashrom.org if any of the above operations
+work correctly for you with this flash chip. Please include the flashrom log 
+file for all operations you tested (see the man page for details), and mention 
+which mainboard or programmer you tested in the subject line.
+Thanks for your help!
+No operations were specified.
 ```
 
 ## Arduinos to the rescue
@@ -147,8 +148,44 @@ Changed to XZ, now it is pretty same size and fits to RootFS MTD.
 Padded newRootFS file with FF till it reached original MTD partition size.
 Combined all the files back into on one image file, wrote to flash, booting...
 
-## Fail
-How could I forget about CRC... Trying to find out proper way to calculate CRC, found RSDK, tried to understand image creation... too much for my brain for now.
+```
+Booting...
+init_ram
+ 00000202 M init ddr ok
+
+DRAM Type: DDR2
+        DRAM frequency: 533MHz
+        DRAM Size: 128MB
+JEDEC id EF4017, EXT id 0x0000
+found w25q64
+flash vendor: Winbond
+w25q64, size=8MB, erasesize=64KB, max_speed_hz=29000000Hz
+auto_mode=0 addr_width=3 erase_opcode=0x000000d8
+=>CPU Wake-up interrupt happen! GISR=89000004 
+ 
+---Realtek RTL8197F boot code at 2018.04.20-10:17+0800 v3.4.11B.9 (999MHz)
+Mac addr:04-95-e6-1a-96-e0
+lan_wan_isolation Initing...
+config: lan port mask is 0x000000f7
+config: wan port mask is 0x000000e8
+lan_wan_isolation Initing has been completed.
+lan_wan_isolation Initing...
+config: lan port mask is 0x000000f7
+config: wan port mask is 0x000000e8
+lan_wan_isolation Initing has been completed.
+wait for upgrage
+port[0] link:down
+port[1] link:down
+port[2] link:down
+port[3] link:down
+port[4] link:down
+irq:0x00008080
+rootfs checksum error at 00228012!
+<RealTek>
+```
+
+## Fail!
+How could I forget about CRC... Trying to find out proper way to calculate CRC, spent couple hours - found RSDK, tried to understand image creation... too much for my brain for now.
 Lets try something else.
 
 # Second try
@@ -224,16 +261,87 @@ drwxr-xr-x    3 root     root             0 Jan  1  1970 serial8250
 drwxr-xr-x    3 root     root             0 Jan  1  1970 spi-sheipa.0
 -rw-r--r--    1 root     root         16384 Jul 18 21:12 uevent
 ```
-
+And here are processes running
+```
+~ # ps
+PID   USER     TIME   COMMAND
+    1 root       0:01 init
+    2 root       0:00 [kthreadd]
+    3 root       0:40 [ksoftirqd/0]
+    4 root       0:00 [kworker/0:0]
+    5 root       0:00 [kworker/0:0H]
+    6 root       0:01 [kworker/u2:0]
+    7 root       0:00 [khelper]
+    8 root       0:00 [kworker/u2:1]
+   75 root       0:00 [writeback]
+   78 root       0:00 [bioset]
+   79 root       0:00 [crypto]
+   81 root       0:00 [kblockd]
+   84 root       0:01 [spi0]
+  102 root       0:00 [kworker/0:1]
+  106 root       0:00 [kswapd0]
+  154 root       0:00 [fsnotify_mark]
+  708 root       0:00 [mtdblock0]
+  713 root       0:00 [mtdblock1]
+  718 root       0:00 [mtdblock2]
+  723 root       0:00 [mtdblock3]
+  728 root       0:00 [mtdblock4]
+  733 root       0:00 [mtdblock5]
+  738 root       0:00 [mtdblock6]
+  743 root       0:00 [mtdblock7]
+  748 root       0:00 [mtdblock8]
+  802 root       0:00 [deferwq]
+  860 root       0:03 klogd -n
+  862 root       0:00 monitor
+  863 root       1:55 sh /usr/bin/ugw_watchdog.sh
+  869 root       0:00 syslogd -f /var/etc/syslog.conf -s 50
+  914 root       0:15 cfmd
+ 1030 root       0:00 [jffs2_gcd_mtd7]
+ 1032 root       0:11 timer
+ 1033 root       0:00 logserver
+ 1034 root       0:14 netctrl
+ 1069 root       0:01 device_list
+ 1071 root       3:20 sh /usr/bin/mesh_op.sh
+ 1530 root       0:10 pann
+ 1531 root       0:00 gpio_ctrl
+ 1532 root       0:00 mesh_status_check
+ 1534 root       0:19 network_check
+ 1570 root       0:00 redis-server /etc_ro/redis.conf
+ 1571 root       0:01 cmdsrv -l tcp://0.0.0.0:12598 -R tcp://127.0.0.1:6379
+ 1572 root       0:00 [kworker/0:1H]
+ 1573 root       0:05 confsrv
+ 1599 root       0:01 dhcps -C /etc/dhcps.conf -l /etc/dhcps.leases -x /etc/dhc
+ 1931 root       0:00 ucloud -l 4
+ 1962 root       0:00 sntp 1 28800 43200
+ 2370 root       0:00 ftd -br br0 -w wlan0 wlan1 -pid /var/run/ft.pid -c /tmp/f
+ 2375 root       0:00 pathsel -i wlan-msh -P -t 9
+ 2387 root       0:00 multiWAN
+ 2488 root       0:00 dhcpcd_wan1 -c /etc/wan1.ini -m 1 eth1 -h NOVA-0495e61a96
+ 2567 root       0:00 dnrd -t 3 -M 600 --cache=off -b -R /etc/dnrd -r 3 -s 192.
+ 2955 root       0:00 miniupnpd -f /etc/miniupnpd.config -w
+ 2991 root       0:00 igmpproxy
+10388 root       0:00 -sh
+12125 root       0:00 sleep 5
+12155 root       0:00 sleep 1
+12156 root       0:00 ps
+```
 
 # *Success!* 
 I have root access to new Tenda MW6, that makes me happy. I hate having black boxes.
+Root password is just your current wifi password, encoded with Base64
 
 # Next steps
 So back to my original problem with DHCP server starting up no matter what.
 Its time to examine the scripts and how they work. Looks like many business logic is done in C/C++ and compiled (vs making a lot of scripts).
 Another complication is no overlay fs, all mounted R/O except for `/dev/mtdblock7` on `/tmp/log/crash type jffs2 (rw,relatime)`
 We'll see how it goes.
+Another task is to go back to "First try" and understand how to repack firmware so it can be wrote back to SPI flash.
+
 
 That was fun.
 
+
+# Links
+1. [Tenda Mesh3-18 (Nova MW6 2018) on wikidevi.com](!https://wikidevi.com/wiki/Tenda_Mesh3-18_(Nova_MW6_2018))
+2. [SPI Flash programmer by SKProj](!http://skproj.ru/programmator-spi-flash-svoimi-rukami/)
+3. [flashrom homepage](!https://flashrom.org/Flashrom)
