@@ -1,18 +1,18 @@
 # tenda-reverse
 
-## history
+## Preface
 
-Lets say... just for fun.. i got 2x3-packs of tenda MW6 to cover big area (indoors and outdoors).
+Lets say... just for fun.. i got 2 x 3-packs of tenda MW6 to cover big area (indoors and outdoors).
 I had 3 of my MW6 backhauled with ethernet (actually, it is PLC bridge adapters).
 
 In "default" configuration it works okay, however i already had good openwrt router and several devices/services set up.
 By defaul, MW6 works in DHCP mode, creates 192.168.5.x subnet and puts everyone in there.
 But this 1) brings extra NAT layer, 2) breaks my services.
 
-So I decided to switch it to "bridge" mode, in which, according to manual, it shall turn off all its network services and just act as a bridge.
+So I decided to switch it to *bridge* mode, in which, according to manual, it shall turn off all its network services and just act as a bridge.
 
-From the first glance it worked, but then i realized some of my devices got wrong IPs and then understood that "main" cube runs its own lunapark with blackjack... I mean it runs DHCP server.
-There are absolutely no web config, only phone app. No ways to disable it there. 
+From the first glance it worked, but then I realized some of my devices got wrong IPs and then understood that "main" cube runs its own ~~luna park with blackjack and hookers~~ DHCP server.
+There are absolutely no web administratoin page, only phone app. I see no ways to disable it from there. 
 
 Nmap says DHCP server is running, and it intercepts all wifi clients and gives IP addresses from its pool.
 And needless to say these addresses are wrong, not what I need.
@@ -21,29 +21,55 @@ Googled, found their support - same issue, however person says `dhcp authoritati
 So I started investigation - how can I disable DHCP server.
 
 # Network services
-Few ports opened on the cube. nothing looks like telnet or ssh from the beginning
+Few ports opened on the cube. nothing looks like telnet or ssh from the beginning, however after I connected to UART - I noticed that telnetd is starting up when you hold Reset button for 3 seconds (6 seconds brings back default settings).
 
-From LAN
+## From LAN
 ```
 PORT     STATE SERVICE                                                          
 23/tcp   open  telnet      <--- opened only after you hold Reset for 3 seconds
 5500/tcp open  hotline
 9000/tcp open  cslistener
 ```
-From WAN
+DHCP server is up
+```
+sudo nmap -sU -p 67 --script=dhcp-discover 192.168.5.1
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2019-07-18 20:04 MSK
+Nmap scan report for _gateway (192.168.5.1)
+Host is up (0.0027s latency).
+
+PORT   STATE SERVICE
+67/udp open  dhcps
+| dhcp-discover: 
+|   DHCP Message Type: DHCPACK
+|   Server Identifier: 192.168.5.1
+|   IP Address Lease Time: 23h30m42s
+|   Subnet Mask: 255.255.255.0
+|   Broadcast Address: 192.168.5.255
+|   Router: 192.168.5.1
+|   Domain Name Server: 192.168.5.1
+|_  Domain Name: tendawifi.com
+MAC Address: 04:95:E6:1A:96:E0 (Tenda Technology,Ltd.Dongguan branch)
+
+Nmap done: 1 IP address (1 host up) scanned in 0.75 seconds
+
+```
+
+## From WAN
 ```
 PORT     STATE  SERVICE
 1723/tcp closed pptp
 ```
 Closer examination of firmware required to understand what is opened and when.
 
-## Reset button - telnetd
-This came after UART research.
-Holding reset button for 3 seconds brings up telnetd!
-However hard to get in. root/admin/support/user do not work with admin/password/user/1234/12345678 passwords and some other I tried.
+## Trying to get in via telnet
+I tried root/admin/support/user with admin/password/user/1234/12345678 passwords and some other.. no, not working.
 
 # Hardware
-Opening the cube is very straightforward. Of interesting - UART socket and soic-8 SPI flash. Main chip closed by radiator - RealTek RTL8197F
+Opening the cube is very straightforward. Out of interesting - UART socket and soic-8 SPI flash. Main chip closed by radiator - RealTek RTL8197F
+
+![Tenda MW6 router board](https://github.com/latonita/tenda-reverse/raw/master/images/tenda-mw6-board-uart.png)
+
 
 ## UART - J4
 115200 8n1. Starting from pin 1 (closer to SPI flash): VCC, RX, TX, GND.
@@ -52,11 +78,12 @@ Opening the cube is very straightforward. Of interesting - UART socket and soic-
 BOHONG BH25Q64 SPI Flash, 8MB. [Datasheet](http://www.hhzealcore.com/upload/201807/02/201807021644551022.pdf)
 
 # Firmware
-Is not available on web. Phone app looks for that in tenda cloud and downloads itself. My cubes have latest firmware, so can't sniff over network where does it take new. Only i can say this app has its own protocol of communication with tenda cloud.
+Firmware is not available on web. Phone app looks for that in tenda cloud and downloads itself. My cubes have latest firmware, so can't sniff over network where does it take new. Only i can say this app has its own protocol of communication with tenda cloud.
 
 ## Read flash chip
 Unfortunately chip clamp didn't work, it powers up whole device and it starts communication with chip.
-Desoldered it completely.
+Desoldered it completely. Don't forget capton tape.
+![Preparation to desolder chip](https://github.com/latonita/tenda-reverse/raw/master/images/prepare-to-desolder.jpg)
 
 ### How to read it, FTFS!
 I'm not reading flash chips everyday and I don't own special programming device for this.
@@ -72,6 +99,8 @@ Pinout is taken from datasheet.
 | ADBUS3       | CS       | 1 |
 
 Other flash chip pins 4 - GND, 8 - VCC 3.3v, 3 and 7 go to VCC.
+
+![Wiring SPI chip to FT2232H](https://github.com/latonita/tenda-reverse/raw/master/images/ft2232h.jpg)
 
 ### Use flashrom
 ```
@@ -99,19 +128,19 @@ No operations were specified.
 ## Arduinos and Espressif to the rescue
 Looked around and found [site SKProj with sketch and .net app (in russian)](http://skproj.ru/programmator-spi-flash-svoimi-rukami/) which worked well for me to read chinese flash chip.
 
-
 I used NodeMCU esp8266 board since it is 3.3v and I didn't want to think of 5v<>3v level conversion. 
 
 **Important**: SPI chip shall be connected to HSPI pins `GPIO12-GPIO14` as per [official documentation](https://nodemcu.readthedocs.io/en/master/modules/spi/).
 
 - There is `serprog` firmware for Arduinos which work with `flashrom`, but I couldn't quickly find its port for esp8266
+![ESP8266 HSPI wiring](https://github.com/latonita/tenda-reverse/raw/master/images/esp8266-reader.jpg)
 
 ## Change flash chip to normal one
 To make flashing easier I just bought couple Winbond W25Q64FV chips. They properly work with `flashrom` and I dont need to run Windows to flash chip. I wrote flash dump to new chip with 
 ```
 flashrom -p ft2232_spi:type=2232H,port=A -w image.bin
 ```
-Tenda bootloader detected new flash chip properly and started normally. 
+Tenda bootloader detected new flash chip and started normally. 
 
 
 # Firmware examination
@@ -128,7 +157,7 @@ DECIMAL       HEXADECIMAL     DESCRIPTION
 6160384       0x5E0000        JFFS2 filesystem, little endian
 ```
 
-However with a hope to be able to glue it all back together I split flash image to 9 files according to MTD blocks in the bootlog
+However with a hope to be able to glue it all back together I split flash image to 9 files according to MTD blocks in the bootlog with `dd`
 ```
 flash vendor: BOHONG
 m25p80 spi0.0: BH25Q64 (8192 Kbytes) (55000000 Hz)
@@ -234,10 +263,13 @@ Looking through the files found many of them are using `prod_change_root_passwd`
 ## Hard way with IDA PRO which I see first time in my life
 Open `/bin/netctrl` in IDA. Open function `main`. It clears up buffers first, then reads `sys.role` parameter from configuration and depends on this either sleeps or calls external function `prod_change_root_passwd` without parameters.
 
+![Netctrl main](https://github.com/latonita/tenda-reverse/raw/master/images/disasm-netctrl.png)
 
 Open `/lib/libcommonprod.so`. Open function `prod_change_root_passw`. Also clears buffers first, then reads some parameters from config and calls `Encode64()` with value either `wl2g.ssid0.wpapsk_psk` or `TD_WLAN1_SSID0_PWD`.
 
 And then just sets root password via command line `(echo %s;sleep 1;echo %s) | passwd root -a s> /dev/null`
+
+![Set root password](https://github.com/latonita/tenda-reverse/raw/master/images/disasm-set-password.png)
 
 **Voila!**
 
@@ -378,6 +410,6 @@ That was fun.
 
 
 # Links
-1. [Tenda Mesh3-18 (Nova MW6 2018) on wikidevi.com](!https://wikidevi.com/wiki/Tenda_Mesh3-18_(Nova_MW6_2018))
-2. [SPI Flash programmer by SKProj](!http://skproj.ru/programmator-spi-flash-svoimi-rukami/)
-3. [flashrom homepage](!https://flashrom.org/Flashrom)
+1. [Tenda Mesh3-18 (Nova MW6 2018) on wikidevi.com](https://wikidevi.com/wiki/Tenda_Mesh3-18_(Nova_MW6_2018))
+2. [SPI Flash programmer by SKProj](http://skproj.ru/programmator-spi-flash-svoimi-rukami/)
+3. [flashrom homepage](https://flashrom.org/Flashrom)
