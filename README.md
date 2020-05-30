@@ -398,12 +398,36 @@ I have root access to new Tenda MW6, that makes me happy since I hate having bla
 
 Root password is just your current wifi password, encoded with Base64.
 
+# Disabling the DHCP server
+The `cfm` utility can be discovered in the scripts in `/usr/sbin`, and is used to manipulate the parameters that persist across reboots (you can inspect the store directly with `cat /dev/mtd5`).
+
+```
+~ # cfm get ^dhcps
+dhcps.Staticip1=
+dhcps.Staticnum=0
+dhcps.apmode.list1=1;br1;192.168.1.31;192.168.1.254;192.168.1.1;255.255.255.0;1440;192.168.1.66;192.168.1.70;host
+dhcps.apmode.list2=1;br1;192.168.1.2;192.168.1.30;192.168.1.1;255.255.255.0;1440;192.168.1.66;192.168.1.70;dev
+dhcps.en=1
+dhcps.list1=1;br0;192.168.1.31;192.168.1.254;192.168.1.1;255.255.255.0;1440;192.168.1.1;;host
+dhcps.list2=1;br0;192.168.1.2;192.168.1.30;192.168.1.1;255.255.255.0;1440;192.168.1.1;;dev
+dhcps.listnum=2
+dhcps.static.list1=1    14:DA:E9:38:EC:40       192.168.1.70
+dhcps.static.listnum=1
+```
+
+Generally you'll need to set up port forwarding first, as otherwise the UI may not recognise your device.
+
+For ```dhcps.listnum```, if you set it to 0, it does not write a /etc/dhcps.conf on reboot, thus disabling dhcps.
+
+```
+~ # cfm set dhcps.listnum 0
+```
+
+This will persist across reboots, and can be easily undone by changing dhcps.listnum back to its original value, and a factory reset will also reverse it.
+
 # Next steps
-So back to my original problem with DHCP server starting up no matter what.
-Its time to examine the scripts and how they work. Looks like many business logic is done in C/C++ and compiled (vs making a lot of scripts).
-Another complication is no overlay fs, all mounted R/O except for `/dev/mtdblock7` on `/tmp/log/crash type jffs2 (rw,relatime)`
-We'll see how it goes.
-Another task is to go back to "First try" and understand how to repack firmware so it can be wrote back to SPI flash.
+Looks like many business logic is done in C/C++ and compiled (vs making a lot of scripts).
+Another complication is no overlay fs, all mounted R/O except for `/dev/mtdblock7` on `/tmp/log/crash type jffs2 (rw,relatime)`- the settings are stored directly in `/dev/mtd5` and manipulated using `cfm`.
 
 
 That was fun.
