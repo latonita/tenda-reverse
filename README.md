@@ -425,6 +425,16 @@ For ```dhcps.listnum```, if you set it to 0, it does not write a /etc/dhcps.conf
 
 This will persist across reboots, and can be easily undone by changing dhcps.listnum back to its original value, and a factory reset will also reverse it.
 
+# DMZ
+
+You're only allowed 8 port forwarding rules in the app, which is pretty limiting.  Setting up a DMZ works (or you can also mess with the forwarding rules using cfm- the virtualser rules look pretty straightforward.
+
+```
+~ # cfm set wan1.dmzip ip.address.here
+~ # cfm set wan1.dmzen 1
+~ # reboot
+```
+
 # Next steps
 Looks like many business logic is done in C/C++ and compiled (vs making a lot of scripts).
 Another complication is no overlay fs, all mounted R/O except for `/dev/mtdblock7` on `/tmp/log/crash type jffs2 (rw,relatime)`- the settings are stored directly in `/dev/mtd5` and manipulated using `cfm`.
