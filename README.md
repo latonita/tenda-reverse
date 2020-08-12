@@ -399,6 +399,8 @@ I have root access to new Tenda MW6, that makes me happy since I hate having bla
 Root password is just your current wifi password, encoded with Base64.
 
 # Disabling the DHCP server
+(Thanks to [@Crees](https://github.com/crees) to finish DHCP research. Tested on MW5, but it has similar software)
+
 The `cfm` utility can be discovered in the scripts in `/usr/sbin`, and is used to manipulate the parameters that persist across reboots (you can inspect the store directly with `cat /dev/mtd5`).
 
 ```
