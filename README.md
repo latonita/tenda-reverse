@@ -446,6 +446,6 @@ That was fun.
 
 
 # Links
-1. [Tenda Mesh3-18 (Nova MW6 2018) on wikidevi.com](https://wikidevi.com/wiki/Tenda_Mesh3-18_(Nova_MW6_2018))
+1. [Tenda Mesh3-18 (Nova MW6 2018) on wikidevi.com](https://deviwiki.com/wiki/Tenda_Mesh3-18_(Nova_MW6_2018))
 2. [SPI Flash programmer by SKProj](http://skproj.ru/programmator-spi-flash-svoimi-rukami/)
 3. [flashrom homepage](https://flashrom.org/Flashrom)
