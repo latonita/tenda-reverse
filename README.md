@@ -75,7 +75,7 @@ Opening the cube is very straightforward. Out of interesting - UART socket and s
 115200 8n1. Starting from pin 1 (closer to SPI flash): VCC, RX, TX, GND.
 
 ## Memory chip
-BOHONG BH25Q64 SPI Flash, 8MB. [Datasheet](http://www.hhzealcore.com/upload/201807/02/201807021644551022.pdf)
+BOHONG BH25Q64 SPI Flash, 8MB. [Datasheet](https://github.com/latonita/tenda-reverse/files/6337446/2012171107_BH25Q64BSSIG_C691572.pdf)
 
 # Firmware
 Firmware is not available on web. Phone app looks for that in tenda cloud and downloads itself. My cubes have latest firmware, so can't sniff over network where does it take new. Only i can say this app has its own protocol of communication with tenda cloud.
