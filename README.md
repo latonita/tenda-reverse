@@ -2,26 +2,26 @@
 
 ## Preface
 
-Lets say... just for fun.. i got 2 x 3-packs of tenda MW6 to cover big area (indoors and outdoors).
-I had 3 of my MW6 backhauled with ethernet (actually, it is PLC bridge adapters).
+Let's say... just for fun... I got 2 x 3-packs of Tenda MW6 to cover a big area (indoors and outdoors).
+I had 3 of my MW6 backhauled with Ethernet (actually, they are PLC bridge adapters).
 
-In "default" configuration it works okay, however i already had good openwrt router and several devices/services set up.
-By defaul, MW6 works in DHCP mode, creates 192.168.5.x subnet and puts everyone in there.
-But this 1) brings extra NAT layer, 2) breaks my services.
+In the default configuration, it works okay; however, I already had a good OpenWrt router and several devices/services set up.
+By default, MW6 works in DHCP mode, creates a 192.168.5.x subnet, and puts everyone in there.
+But this 1) brings an extra NAT layer, and 2) breaks my services.
 
-So I decided to switch it to *bridge* mode, in which, according to manual, it shall turn off all its network services and just act as a bridge.
+So I decided to switch it to *bridge* mode, in which, according to the manual, it should turn off all its network services and just act as a bridge.
 
-From the first glance it worked, but then I realized some of my devices got wrong IPs and then understood that "main" cube runs its own ~~luna park with blackjack and hookers~~ DHCP server.
-There are absolutely no web administratoin page, only phone app. I see no ways to disable it from there. 
+At first glance, it worked, but then I realized some of my devices got the wrong IPs and understood that the "main" cube runs its own ~~theme park with blackjack and hookers~~ DHCP server.
+There is absolutely no web administration page, only a phone app. I see no way to disable it from there. 
 
-Nmap says DHCP server is running, and it intercepts all wifi clients and gives IP addresses from its pool.
-And needless to say these addresses are wrong, not what I need.
-Googled, found their support - same issue, however person says `dhcp authoritative='1'` on main openwrt router works for him, but it never worked for me. 
+Nmap says the DHCP server is running, and it intercepts all WiFi clients and gives IP addresses from its pool.
+Needless to say, these addresses are wrong and not what I need.
+I googled and found their support - same issue. However, a person says `dhcp authoritative='1'` on the main OpenWrt router works for him, but it never worked for me. 
 
-So I started investigation - how can I disable DHCP server.
+So I started investigating - how can I disable the DHCP server?
 
 # Network services
-Few ports opened on the cube. nothing looks like telnet or ssh from the beginning, however after I connected to UART - I noticed that telnetd is starting up when you hold Reset button for 3 seconds (6 seconds brings back default settings).
+A few ports are opened on the cube. Nothing looks like telnet or ssh from the beginning; however, after I connected to UART, I noticed that telnetd starts up when you hold the Reset button for 3 seconds (6 seconds brings back default settings).
 
 ## From LAN
 ```
@@ -63,10 +63,10 @@ PORT     STATE  SERVICE
 Closer examination of firmware required to understand what is opened and when.
 
 ## Trying to get in via telnet
-I tried root/admin/support/user with admin/password/user/1234/12345678 passwords and some other.. no, not working.
+I tried root/admin/support/user with admin/password/user/1234/12345678 passwords and some others... no, not working.
 
 # Hardware
-Opening the cube is very straightforward. Out of interesting - UART socket and soic-8 SPI flash. Main chip closed by radiator - RealTek RTL8197F
+Opening the cube is very straightforward. Out of interest - UART socket and soic-8 SPI flash. Main chip closed by radiator - RealTek RTL8197F
 
 ![Tenda MW6 router board](https://github.com/latonita/tenda-reverse/raw/master/images/tenda-mw6-board-uart.png)
 
