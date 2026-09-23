@@ -188,6 +188,10 @@ cat `/etc/shadow`
 ```
 root:$1$OVhtCyFa$7tISyKW1KGssHAQj1vI3i1:14319::::::
 ```
+
+**NB! Comment after 7 years**  This appears to be well-known Tenda's password 'Fireitup', but you can't use it because its getting changed later during the boot process.
+
+
 cat `/etc/inittab`
 ```
 ::sysinit:/etc_ro/init.d/rcS
